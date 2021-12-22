@@ -15,6 +15,9 @@ struct OnboardingView: View {
     @State private var buttonWidth: Double = UIScreen.main.bounds.width - 80
     @State private var buttonOffset: CGFloat = 0
     @State private var isAnimating: Bool = false
+    @State private var imageOffset: CGSize = .zero
+    @State private var indicatorOpacity: Double = 1.0
+    @State private var textTitle: String = "Share."
     
     // MARK: - BODY
     var body: some View {
@@ -26,10 +29,12 @@ struct OnboardingView: View {
                 // MARK: - HEADER
                 Spacer()
                 VStack(spacing: 0){
-                    Text("Share")
+                    Text(textTitle)
                         .font(.system(size: 60))
                         .fontWeight(.heavy)
                         .foregroundColor(.white)
+                        .transition(.opacity)
+                        .id(textTitle)
                     
                     Text("""
                         It's not how much we give, but
@@ -40,6 +45,7 @@ struct OnboardingView: View {
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 10)
+                        
                 }
                 .opacity(isAnimating ? 1 : 0)
                 .offset(x: isAnimating ? 0 : -40)
@@ -52,6 +58,9 @@ struct OnboardingView: View {
                 ZStack {
                     
                     CircleGroupView(ShapeColor: .white, ShapeOpacity: 0.2)
+                        .offset(x: imageOffset.width * -1)
+                        .blur(radius: abs(imageOffset.width / 5)) // Blur effect when character-1 is moved
+                        .animation(.easeOut(duration: 1), value: imageOffset) // Animates when value of imageOffset changes
                     
                     Image("character-1")
                         .resizable()
@@ -59,8 +68,43 @@ struct OnboardingView: View {
                         .opacity(isAnimating ? 1 : 0)
                         .offset(x: isAnimating ? 0 : 40)
                         .animation(.easeOut(duration: 1), value: isAnimating)
+                        .offset(x: imageOffset.width * 1.2, y: 0) // lock gesture direction
+                        .rotationEffect(.degrees(Double(imageOffset.width / 20))) // Add rotation effect
+                        .gesture(
+                            DragGesture()
+                                .onChanged {gesture in
+                                    if (abs(imageOffset.width) <= 150){
+                                        imageOffset = gesture.translation
+                                    }
+                                    
+                                    withAnimation(.linear(duration: 0.25)){
+                                        indicatorOpacity = 0
+                                        textTitle = "Give."
+                                    }
+                                    
+                                }
+                                .onEnded { gesture in
+                                    imageOffset = .zero
+                                    
+                                    withAnimation(.linear(duration: 0.25)){
+                                        indicatorOpacity = 1
+                                        textTitle = "Share."
+                                    }
+                                }
+                        )// end of gesture
+                        .animation(.easeOut(duration: 1), value: imageOffset)
                     
                 } // MARK: CENTER
+                .overlay(
+                    Image(systemName: "arrow.left.and.right.circle")
+                        .font(.system(size: 44, weight: .bold))
+                        .foregroundColor(.white)
+                        .offset(y: 20)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.easeOut(duration: 1).delay(2),  value: isAnimating)
+                        .opacity(indicatorOpacity),
+                    alignment: .bottom
+                )
                 
                 Spacer()
                 
@@ -103,8 +147,8 @@ struct OnboardingView: View {
                         .offset(x: buttonOffset)
                         .gesture(
                             DragGesture ()
-                                .onChanged {
-                                    gesture in if gesture.translation.width > 0 && buttonOffset <= buttonWidth - 80 {
+                                .onChanged { gesture in
+                                    if gesture.translation.width > 0 && buttonOffset <= buttonWidth - 80 {
                                         buttonOffset = gesture.translation.width
                                     }
                                 }
@@ -142,6 +186,7 @@ struct OnboardingView: View {
         .onDisappear(perform: {
             isAnimating = false
         })
+        .preferredColorScheme(.dark)
     }
 }
 

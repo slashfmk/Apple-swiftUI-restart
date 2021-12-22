@@ -77,7 +77,6 @@ struct HomeView: View {
             }
         } //: VSTACK
         .onAppear(perform: {
-            //isAnimating = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
                 isAnimating = true
             })
